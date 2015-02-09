@@ -1,0 +1,733 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <title>Real Estate Search</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.9/jquery.validate.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+        var invalidForm = false;
+        $(document).ready(function(){
+            var pictureFB;
+            var linkFB;
+            var nameFB;
+            var lastSoldPriceFB;
+            var overallChangeFB;
+            //$("#stAddressVal").focus();
+            $("#searchForm").validate({                    
+                rules: {
+                    stAddressVal:{
+                        required: true
+                    },
+                    cityVal: {
+                        required: true
+                    },
+                    stateVal: {
+                        required: true                            
+                    }
+                },
+                errorClass: "error1",
+                
+                highlight : function(element){
+                    $(element).closest(".form-group").addClass("has-error");
+                    $(element).closest(".form-group").removeClass("form-inline");
+                    //$(element).closest(".form-group")
+                    //$(element).parent(".form-group").next().find("label").css("visibility", "visible");
+                    //$(element).parent(".form-group").next().find("label").html("This field is required");
+                    $(element).parent().next().find("label").css("visibility", "visible");
+                    $(element).parent().next().find("label").html("This field is required.");
+                },
+                
+                unhighlight: function(element) {
+                    $(element).closest(".form-group").removeClass("has-error");
+                    $(element).closest(".form-group").parent(".form-group").css("vertical-align", "top");
+                    //$(element).closest(".form-group").next().find("label").css("display", "block");
+                    $(element).parent().next().find("label").html("This field is required.");
+                    $(element).parent().next().find("label").css("visibility", "hidden");
+                        
+                },                    
+                errorElement: "label",
+                errorPlacement: function(error, element) {
+                    
+                   //error.appendTo(element.closest("label.error"));
+                },
+                submitHandler: function(form){
+                    var streetInput = $("#stAddressVal").val();
+                    var cityInput = $("#cityVal").val();
+                    var stateInput = $("#stateVal").val();
+                    
+                    $.ajax({
+                        url: "http://cs-server.usc.edu:3269/index_AWS.php/",
+                        // this is the parameter list
+                        data: { "streetInput": streetInput,
+                                "cityInput": cityInput,
+                                "stateInput":stateInput
+                        },
+                        type: "GET",
+                        dataType : "json",
+                        success: function(output) {
+                            if (typeof(output.errorCode)!="undefined") {
+                                $("#content").html("");
+                                $("div.content").html("");
+                                $("div.content").html("<h4 style='color:red'>No exact match found--Verify that the given address is correct</h4>")
+                            }
+                            else{
+                                //build table
+                                $("div.content").html("");
+                                $("#content").html("");
+                                var a = output
+                                var result = output.result;
+                                var chart = output.chart;
+                                var propertyType = result.useCode;
+                                if (propertyType=="") {
+                                    propertyType="N/A";
+                                }
+                                var lastSoldPrice = result.lastSoldPrice;
+                                if (lastSoldPrice==""||lastSoldPrice=="0"||lastSoldPrice=="0.0") {
+                                    lastSoldPrice="N/A";
+                                }
+                                else{
+                                    lastSoldPrice = "$"+lastSoldPrice;
+                                }
+                                var yearBuilt = result.yearBuilt;
+                                if (yearBuilt=="") {
+                                    yearBuilt="N/A";
+                                }
+                                var lastSoldDate = result.lastSoldDate;
+                                if (lastSoldDate=="" || lastSoldDate=="01-Jan-1970" || lastSoldDate=="31-Dec-1969") {
+                                    lastSoldDate="N/A";
+                                }
+                                var lotSizeSqFt = result.lotSizeSqFt;
+                                if (lotSizeSqFt=="") {
+                                    lotSizeSqFt="N/A";
+                                }
+                                else{
+                                    lotSizeSqFt=lotSizeSqFt+" sq.ft.";
+                                }
+                                var estimateLastUpdate = result.estimateLastUpdate;
+                                if (estimateLastUpdate==""|| estimateLastUpdate=="01-Jan-1970" || estimateLastUpdate=="31-Dec-1969") {
+                                    estimateLastUpdate="N/A";
+                                }
+                                var estimateAmount = result.estimateAmount;
+                                if (estimateAmount=="" || estimateAmount=="0" || estimateAmount=="0.0") {
+                                    estimateAmount="N/A";
+                                }
+                                else{
+                                    estimateAmount="$"+estimateAmount;
+                                }
+                                
+                                var finishedSqFt = result.finishedSqFt;
+                                if (finishedSqFt=="") {
+                                    finishedSqFt="N/A";
+                                }
+                                else{
+                                    finishedSqFt = finishedSqFt+" sq.ft.";
+                                }
+                                
+                                var overallChangeArrow;
+                                if (result.estimateValueChangeSign=="-") {
+                                    overallChangeArrow = result.imgn;
+                                }
+                                else if(result.estimateValueChangeSign=="+"){
+                                    overallChangeArrow = result.imgp;
+                                }
+                                else {
+                                    overallChangeArrow = "";
+                                }
+                                if (overallChangeArrow!="") {
+                                    overallChangeArrow = '<img src="'+overallChangeArrow+'" height="10" width="14"/>';
+                                }
+                                
+                                var estimateValueChange = result.estimateValueChange;
+                                if (estimateValueChange=="" || estimateValueChange=="0" || estimateValueChange=="0.0") {
+                                    estimateValueChange="N/A";
+                                }
+                                else{
+                                    estimateValueChange="$"+estimateValueChange;
+                                }
+                                var bathrooms = result.bathrooms;
+                                if (bathrooms=="") {
+                                    bathrooms = "N/A";
+                                }
+                                var estimateValuationRangeLow = result.estimateValuationRangeLow;
+                                if (estimateValuationRangeLow=="" || estimateValuationRangeLow == "0" || estimateValuationRangeLow == "0.0") {
+                                    estimateValuationRangeLow="N/A";
+                                }
+                                else{
+                                    estimateValuationRangeLow="$"+estimateValuationRangeLow;
+                                }
+                                var estimateValuationRangeHigh = result.estimateValuationRangeHigh;
+                                if (estimateValuationRangeHigh=="" || estimateValuationRangeHigh == "0" || estimateValuationRangeHigh == "0.0") {
+                                    estimateValuationRangeHigh="N/A";
+                                }
+                                else{
+                                    estimateValuationRangeHigh="$"+estimateValuationRangeHigh;
+                                }
+                                var bedrooms = result.bedrooms;
+                                if (bedrooms=="") {
+                                    bedrooms="N/A";
+                                }
+                                
+                                var restimateLastUpdate = result.restimateLastUpdate;
+                                if (restimateLastUpdate=="" || restimateLastUpdate=="01-Jan-1970" || restimateLastUpdate=="31-Dec-1969") {
+                                    restimateLastUpdate="N/A";
+                                }
+                                var restimateAmount = result.restimateAmount;
+                                if (restimateAmount=="" || restimateAmount=="0" || restimateAmount=="0.0") {
+                                    restimateAmount="N/A";
+                                }
+                                else{
+                                    restimateAmount="$"+restimateAmount;
+                                }
+                                var taxAssessmentYear = result.taxAssessmentYear;
+                                if (taxAssessmentYear=="") {
+                                    taxAssessmentYear="N/A";
+                                }
+                                
+                                var rentChangeArrow;
+                                if (result.restimateValueChangeSign=="-") {
+                                    rentChangeArrow = result.imgn;
+                                }
+                                else if(result.restimateValueChangeSign=="+"){
+                                    rentChangeArrow = result.imgp;
+                                }
+                                else{
+                                    rentChangeArrow ="";
+                                }
+                                if (rentChangeArrow!="") {
+                                    rentChangeArrow = '<img src="'+rentChangeArrow+'" height="10" width="14"/>';
+                                }
+                                var restimateValueChange = result.restimateValueChange;
+                                if (restimateValueChange=="" || restimateValueChange=="0" || restimateValueChange=="0.0") {
+                                    restimateValueChange="N/A";
+                                }
+                                else{
+                                    restimateValueChange="$"+restimateValueChange;
+                                }
+                                var taxAssessment = result.taxAssessment;
+                                if (taxAssessment=="") {
+                                    taxAssessment="N/A";
+                                }
+                                else{
+                                    taxAssessment = "$"+taxAssessment;
+                                }
+                                var restimateValuationRangeLow = result.restimateValuationRangeLow;
+                                if (restimateValuationRangeLow=="") {
+                                    restimateValuationRangeLow="N/A";
+                                }
+                                else{
+                                    restimateValuationRangeLow="$"+restimateValuationRangeLow;
+                                }
+                                var restimateValuationRangeHigh = result.restimateValuationRangeHigh;
+                                if (restimateValuationRangeHigh=="" || restimateValuationRangeHigh=="0" || restimateValuationRangeHigh=="0.0") {
+                                    restimateValuationRangeHigh="N/A";
+                                }
+                                else{
+                                    restimateValuationRangeHigh="$"+restimateValuationRangeHigh;
+                                }
+                                var yearOne = chart["1year"].url;
+                                pictureFB = yearOne;
+                                var yearFive = chart["5year"].url;
+                                var yearTen = chart["10year"].url;
+                                var address = result.street+', '+result.city+', '+result.state+'-'+result.zipcode;
+                                nameFB = address;
+                                linkFB = result.homedetails;
+                                
+                                lastSoldPriceFB = lastSoldPrice;
+                                if (result.estimateValueChangeSign=="-") {
+                                    overallChangeFB = "-"+estimateValueChange;
+                                }
+                                else{
+                                    overallChangeFB=estimateValueChange;
+                                }
+                                var temp = 'window.open(this.href, \'\',\'width=800,height=500,scrollbars=yes,resizable=yes,toolbar=yes,menubar=no,location=no,directories=no,status=yes\'); return false;';
+                                
+                                var table = '<ul class="nav nav-tabs tabs" role="tablist" id="product-table"><li role="presentation" class="active" ><a id="bas" href="#basicInfo" data-toggle="tab" role="tab" class="tabActive">Basic Info</a></li>';
+                                table+='<li role="presentation" ><a id="hist" href="#historical" data-toggle="tab" role="tab" class="tabInActive">Historical Zestimates</a></li></ul>';
+                                table+='<div class="tab-content"><div role="tabpanel" class="tab-pane active" id="basicInfo">';
+                                table+='<div class="table-responsive"><table class="table table-striped" id="detailsTable"><tr><td id="homeLink" colspan="4">';
+                                table+='See more details for <a id="propertyLink" class="textColor" href="'+result.homedetails+'" onclick="'+temp+'">'+result.street+', '+result.city+', '+result.state+'-'+result.zipcode+'</a> on Zillow';
+                                table+='<div id="fb-share" style="float:right"><input type="image" src="facebook_share_icon.png"/></div></td></tr>';
+                                table+='<tr><td class="first">Property Type:</td><td class="second">'+propertyType+'</td><td class="third">Last Sold Price:</td><td class="fourth">'+lastSoldPrice+'</td>';
+                                table+='<tr><td class="first">Year Built:</td><td class="second">'+yearBuilt+'</td><td class="third">Last Sold Date:</td><td class="fourth">'+lastSoldDate+'</td>';
+                                table+='<tr><td class="first">Lot Size:</td><td class="second">'+lotSizeSqFt+'</td><td class="third">Zestimate &#174 Property Estimate as of '+estimateLastUpdate+':</td><td class="fourth">'+estimateAmount+'</td>';
+                                table+='<tr><td class="first">Finished Area:</td><td class="second">'+finishedSqFt+'</td><td class="third">30 Days Overall Change:</td><td class="fourth">'+overallChangeArrow+estimateValueChange+'</td>';
+                                table+='<tr><td class="first">Bathrooms:</td><td class="second">'+bathrooms+'</td><td class="third">All Time Property Range:</td><td class="fourth">'+estimateValuationRangeLow+' - '+estimateValuationRangeHigh+'</td>';
+                                table+='<tr><td class="first">Bedrooms:</td><td class="second">'+bedrooms+'</td><td class="third">Rent Zestimate &#174 Rent Valuation as of '+restimateLastUpdate+':</td><td class="fourth">'+restimateAmount+'</td>';
+                                table+='<tr><td class="first">Tax Assesment Year:</td><td class="second">'+taxAssessmentYear+'</td><td class="third">30 Days Rent Change:</td><td class="fourth">'+rentChangeArrow+restimateValueChange+'</td>';
+                                table+='<tr><td class="first">Tax Assessment:</td><td class="second">'+taxAssessment+'</td><td class="third">All Time Rent Range:</td><td class="fourth">'+restimateValuationRangeLow+' - '+restimateValuationRangeHigh+'</td>';
+                                table+="</table></div></div>";
+                                
+                                table+='<div role="tabpanel" class="tab-pane" id="historical">';
+                                
+                                table+='<div id="carousel-zestimate" class="carousel slide" data-ride="carousel">';
+                                <!-- Indicators -->
+                               
+                                table+='<ol class="carousel-indicators">';
+                                table+='<li data-target="#carousel-zestimate" data-slide-to="0" class="active"></li>';
+                                table+='<li data-target="#carousel-zestimate" data-slide-to="1"></li>';
+                                table+='<li data-target="#carousel-zestimate" data-slide-to="2"></li>';
+                                table+='</ol>';
+                                
+                                
+                                
+                                <!-- Wrapper for slides -->
+                                table+='<div class="carousel-inner" role="listbox">';
+                                table+='<div class="item active" align="center">';
+                                table+='<img class="cImage" src="'+yearOne+'" height="100%" width="100%">';
+                                table+='<div class="carousel-caption">';
+                                //table+='<p>Historical Zestimates for the past<b> 1</b> year'+address+'</p>';
+                                table+='<b>Historical Zestimates for the past 1 year</b><br/>'+address;   
+                                table+='</div></div>';
+                                      
+                                table+='<div class="item" align="center">';
+                                table+='<img class="cImage" src="'+yearFive+'" height="100%" width="100%">';
+                                table+='<div class="carousel-caption">';
+                                //table+='<p>Historical Zestimates for the past<b> 5</b> year'+address+'</p>';
+                                table+='<b>Historical Zestimates for the past 5 year</b><br/>'+address;   
+                                table+='</div></div>';
+                                
+                                table+='<div class="item" align="center">';
+                                table+='<img class="cImage" src="'+yearTen+'">';
+                                table+='<div class="carousel-caption">';
+                                table+='<b>Historical Zestimates for the past 10 year</b><br/>'+address;      
+                                table+='</div></div>';
+                                <!-- Controls -->
+                                
+                                table+='<a class="left carousel-control" href="#carousel-zestimate" role="button" data-slide="prev">';
+                                table+='<span class="glyphicon glyphicon-chevron-left"></span>';
+                                
+                                
+                                table+='<a class="right carousel-control" href="#carousel-zestimate" role="button" data-slide="next">';
+                                table+='<span class="glyphicon glyphicon-chevron-right"></span>';
+                                
+                                
+                                table+="</div></div>";
+                                
+                                $('#product-table #basicInfo').tab('show');
+                                $("#content").html(table);                                
+                            }
+                    },
+                    error:function(jqXHR, textStatus, errorThrown){
+                            alert("Error type" + textStatus + "occured, with value " + errorThrown);
+                    }
+                });
+                
+                }  
+            });   
+            
+            $("body").on("click","#hist",function(){
+                $("#bas").css({"background-color":"orange","color":"white","opacity" : 0.5});
+                $("#hist").css({"background-color": "white", "color":"black", "opacity": 1 });
+                $(".carousel").carousel();
+            });
+            $("body").on("click","#bas",function(){
+                $("#hist").css({"background-color":"orange","color":"white","opacity" : 0.5});
+                $("#bas").css({"background-color": "white", "color":"black", "opacity": 1 });                 
+            });
+            
+            $("body").on("click", "#fb-share", function(){
+                postToFeed()
+            });
+                    
+            function postToFeed(){
+                var posted = false;
+                FB.ui({
+                    'method': 'feed',
+                    'link': linkFB,
+                    'name':nameFB,
+                    'picture': pictureFB,
+                    'caption': 'Property information form Zillow.com',
+                    'description': "<br/>Last Sold Price: "+lastSoldPriceFB+", 30 Days Overall Change: "+overallChangeFB
+                }, function(response){
+                    if (!posted) {
+                        if (response && response.post_id) {
+                            posted = true;
+                            alert("Posted Successfully.");
+                        }
+                        else{
+                            alert("Not Posted.");
+                    }
+                    }                  
+                    
+                    
+                });
+            }     
+        
+            
+            
+            $(".inputs").focusout(function(element){
+                var e = element.target;
+                if ($(e).val()=="") {
+                    $(e).closest(".form-group").addClass("has-error");
+                    $(e).closest(".form-group").removeClass("form-inline");
+                    $(e).parent().next().find("label").css("visibility", "visible");
+                    $(e).parent().next().find("label").html("This field is required.");
+                }
+                else{
+                    $(e).closest(".form-group").removeClass("has-error");
+                    $(e).closest(".form-group").parent(".form-group").css("vertical-align", "top");
+                    $(e).parent().next().find("label").html("This field is required.");
+                    $(e).parent().next().find("label").css("visibility", "hidden");
+                }
+            });
+            $(".inputs").keyup(function(element){
+                var code = element.keyCode || element.which;
+                if (code != 9) {
+                    var e = element.target;
+                    if ($(e).val()=="") {
+                        $(e).closest(".form-group").addClass("has-error");
+                        $(e).closest(".form-group").removeClass("form-inline");
+                        $(element).closest(".form-group")
+                        $(element).parent(".form-group").next().find("label").css("visibility", "visible");
+                        $(element).parent(".form-group").next().find("label").html("This field is required");
+                        $(e).parent().next().find("label").css("visibility", "visible");
+                        $(e).parent().next().find("label").html("This field is required.");
+                    }
+                    else{
+                        $(e).closest(".form-group").removeClass("has-error");
+                        $(e).closest(".form-group").parent(".form-group").css("vertical-align", "top");
+                        $(element).closest(".form-group").next().find("label").css("display", "block");
+                        $(e).parent().next().find("label").html("This field is required.");
+                        $(e).parent().next().find("label").css("visibility", "hidden");
+                    }
+                }
+            });
+        
+        });
+    </script>
+    <style>
+        .errorMsg{
+            text-align: right;
+            color: red;
+        }
+        .textColor{
+            color: orange;
+        }
+        body {
+            background-image: url("V0779-d9.jpg");
+        }
+        .content{
+            text-align: center;
+        }
+        #zillow
+        {           
+            text-align: center;
+            color:white;
+        }
+        
+        .first{
+            width: 20%;
+        }
+        .second{
+            width:20%;
+            padding-right: 25px;
+            text-align: right;
+        }
+        .third{
+            width: 30%;
+        }
+        .fourth{
+            width:30%;
+            text-align: right;
+        }
+        table {
+            background-color: white;
+            
+        }
+        #basicInfo{
+            padding: 15px 15px 5px 15px;
+            background-color:white;
+        }
+        #main{
+            margin: 15px 15px 15px 15px;
+        }
+        .tabInActive{
+            background-color:orange;
+            color:white;
+            opacity : 0.5;
+        }
+        .tabActive{
+            background-color: white;
+            color:black;
+            opacity: 1;
+        }
+        a{
+            text-decoration: none !important;
+        }        
+        .carousel-caption {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            padding: 15px;
+            background: #333333;
+            text-align: left;
+            background: rgba(0,0,0,0.5);
+            z-index: 10;
+            width: 100%;
+            height: 30%;
+        }
+        .carousel-caption p {
+            margin-bottom: 0;
+        }
+        
+        /*@media screen and (max-width: 700px){
+             .carousel-caption p {
+                font-size: 13px;
+            }
+            .carousel-caption {
+            background: rgba(0, 0, 0, 0.55);
+            }
+            .carousel-control {
+                top: 20%;
+            }
+        }*/
+        .carousel-indicators{
+            text-align:right;
+            width:65%
+        }
+        .carousel-indicators .active{
+            background-color: orange;
+        }
+        .errorLabel{
+            visibility: hidden;
+        }
+        
+        div.item{
+            background-color: white;
+        }
+        
+        div.tab-content{            
+            border: 1px solid white;
+            border-bottom-left-radius: 0.50em;
+            border-bottom-right-radius: 0.50em;
+            box-shadow: 10px 10px 5px orange;
+            box-shadow: -1px -1px 5px orange;
+        }
+        div .tab-pane, .carousel-caption, .cImage, .carousel-control, #carousle-zestimate, .carousel-inner > .item {
+            border-bottom-left-radius: 0.50em;
+            border-bottom-right-radius: 0.50em;
+        }
+        
+        
+        /*@media only screen and (min-device-width: 480px){
+            img.cImage{
+                height: 100%;
+                width: 70%;
+            }
+        }*/
+        @media only screen and (max-device-width: 768px){
+            .cImage{
+                height: 100%;
+                width: 100%;
+            }
+            
+        }
+        @media only screen and (min-device-width: 769px){
+            .cImage{
+                height: 100%;
+                width: 70%;
+            }
+            
+        }
+        @media only screen and (max-device-width: 360px){
+            .carousel-caption{
+                    font-size: 7px;
+                }
+        }
+        @media only screen and (min-device-width: 361px)and (max-device-width: 380px){
+            .carousel-caption{
+                    font-size: 8px;
+                }
+        }
+        @media only screen and (min-device-width: 381px)and (max-device-width: 399px){
+            .carousel-caption{
+                    font-size: 9px;
+                }
+        }
+        
+        @media only screen and (min-device-width: 400px) and (max-device-width: 440px){
+            .carousel-caption{
+                    font-size: 10px;
+                }
+        }
+        
+        @media only screen and (min-device-width: 441px) and (max-device-width: 560px){
+            .carousel-caption{
+                    font-size: 12px;
+                }
+        }
+        
+        @media only screen and (min-device-width: 561px) and (max-device-width: 768px){
+            .carousel-caption{
+                    font-size: 14px;
+                }
+        }
+        @media only screen and (min-device-width: 769px) and (max-device-width: 1160px){
+            .carousel-caption{
+                    font-size: 16px;
+                }
+        }
+        @media only screen and (min-width: 1161px){
+            .carousel-caption{
+                    font-size: 20px;
+                }
+        }
+    </style>
+</head>
+<body>
+            <div id="fb-root"></div>
+            <script>(function(d, s, id) {
+              var js, fjs = d.getElementsByTagName(s)[0];
+              if (d.getElementById(id)) return;
+              js = d.createElement(s); js.id = id;
+              js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&appId=1580888788797908&version=v2.0";
+              fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+            </script>
+    <div class="container-fluid" id="main">
+            <h2 class="textColor">Search Your Property Here</h2>
+            <br/>
+                 
+        <form  name = "searchForm" id="searchForm" class="form-inline" role="form" novalidate="novalidate">
+           <div class="row">
+           <div class="form-group">
+                    <label class="control-label textColor" for="stAddressVal">Street Address*:</label>
+                    <div class="form-group">
+                    <input type="text" class="form-control inputs" name="stAddressVal" id="stAddressVal" placeholder="Street Address">
+                    </div>
+                    <div class="errorMsg">
+                    <label class="error errorLabel" generated="true" for="stAddressVal">This field is required.</label>
+                    </div>
+            </div>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <div class="form-group">
+                    <label class="control-label textColor" for="cityVal">City*:</label>
+                    <div class="form-group">
+                    <input type="text" class="form-control inputs" name = "cityVal" id="cityVal" placeholder="City">
+                    </div>
+                    <div class="errorMsg">
+                    <label class="error errorLabel" generated="true" for="cityVal">This field is required.</label>
+                    </div>
+                </div>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <div class="form-group">
+                    <label class="control-label textColor" for="stateVal">State*:</label>
+                    <div class="form-group">
+                    <select id="stateVal" class="form-control inputs" name="stateVal">
+                            <option value=""></option>
+                            <option value="AK">AK</option>
+                    
+                            <option value="AL">AL</option>
+                            <option value="AR">AR</option>
+                            <option value="AZ">AZ</option>
+                            <option value="CA">CA</option>
+                    
+                            <option value="CO">CO</option>
+                            <option value="CT">CT</option>
+                            <option value="DC">DC</option>
+                            <option value="DE">DE</option>
+                    
+                            <option value="FL">FL</option>
+                            <option value="GA">GA</option>
+                            <option value="HI">HI</option>
+                            <option value="IA">IA</option>
+                    
+                            <option value="ID">ID</option>
+                            <option value="IL">IL</option>
+                            <option value="IN">IN</option>
+                            <option value="KS">KS</option>
+                    
+                            <option value="KY">KY</option>
+                            <option value="LA">LA</option>
+                            <option value="MA">MA</option>
+                            <option value="MD">MD</option>
+                    
+                            <option value="ME">ME</option>
+                            <option value="MI">MI</option>
+                            <option value="MN">MN</option>
+                            <option value="MO">MO</option>
+                    
+                            <option value="MS">MS</option>
+                            <option value="MT">MT</option>
+                            <option value="NC">NC</option>
+                            <option value="ND">ND</option>
+                    
+                            <option value="NE">NE</option>
+                            <option value="NH">NH</option>
+                            <option value="NJ">NJ</option>
+                            <option value="NM">NM</option>
+                    
+                            <option value="NV">NV</option>
+                            <option value="NY">NY</option>
+                            <option value="OH">OH</option>
+                            <option value="OK">OK</option>
+                    
+                            <option value="OR">OR</option>
+                            <option value="PA">PA</option>
+                            <option value="RI">RI</option>
+                            <option value="SC">SC</option>
+                    
+                            <option value="SD">SD</option>
+                            <option value="TN">TN</option>
+                            <option value="TX">TX</option>
+                            <option value="UT">UT</option>
+                    
+                            <option value="VA">VA</option>
+                            <option value="VT">VT</option>
+                            <option value="WA">WA</option>
+                            <option value="WI">WI</option>
+                    
+                            <option value="WV">WV</option>
+                            <option value="WY">WY</option>
+                         
+                    </select>
+                   
+                    </div>
+                    <div class="errorMsg">
+                    <label class="error errorLabel" generated="true" for="stateVal">This field is required.</label>
+                    </div>
+                </div>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <div class="form-group">
+                    <label></label>
+                    <div class="form-group">
+                    <input type="submit" id="searchBtn" class="btn btn-primary" style="background-color: orange" value="submit"/>
+                    </div>
+                    <div class="errorMsg">
+                    <label class="error errorLabel">.</label>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="float:right">
+                    <label></label>
+                    <div class="form-group">
+                        <img src="http://www.zillow.com/widgets/GetVersionedResource.htm?path=/static/logos/Zillowlogo_150x40_rounded.gif" width="150" height="40" alt="Zillow Real Estate Search" class="img-responsive">
+                    </div>
+                    <div class="errorMsg">
+                    <label class="error errorLabel">.</label>
+                    </div>
+                </div>
+                <br/>
+                <br/>
+                <br/>
+                <br/>
+                <br/>                
+                <hr/>
+                <div class="content"><!--containes the error message--></div>
+                
+                <div id="content" class="container-fluid">          
+                <!--contains the result-->
+                </div>
+                <div id="zillow">&#0169; Zillow, Inc., 2006-2014. Use is subject to <a href="http://www.zillow.com/corp/Terms.htm" class="textColor">Terms of Use </a><br/>
+                <a href="http://www.zillow.com/zestimate/" class="textColor">What's a Zestimate?<a></div>
+            </div>
+        </form>
+    </div> 
+      <noscript>  
+</body>
+</html>
